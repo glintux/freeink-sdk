@@ -818,7 +818,6 @@ bool BatteryMonitor::configureCharger() {
   return false;
 #endif
 }
-}
 
 bool BatteryMonitor::loadDesignCapacity() {
 #if FREEINK_BATTERY_I2C_GAUGE
