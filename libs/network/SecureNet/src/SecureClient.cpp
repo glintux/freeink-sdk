@@ -30,6 +30,36 @@ void SecureClient::setInsecure() { _insecure = true; }
 
 #if defined(FREEINK_NET_WOLFSSL)
 
+#if defined(BOARD_HAS_PSRAM)
+#include <esp_heap_caps.h>
+
+namespace {
+void* wolfPsramMalloc(size_t size) {
+  return heap_caps_malloc_prefer(size, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT,
+                                 MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+}
+
+void wolfPsramFree(void* ptr) {
+  free(ptr);
+}
+
+void* wolfPsramRealloc(void* ptr, size_t size) {
+  return heap_caps_realloc_prefer(ptr, size, 2, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT,
+                                  MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+}
+
+void ensureWolfAllocators() {
+  static bool registered = false;
+  if (!registered) {
+    if (psramFound()) {
+      wolfSSL_SetAllocators(wolfPsramMalloc, wolfPsramFree, wolfPsramRealloc);
+    }
+    registered = true;
+  }
+}
+}  // namespace
+#endif
+
 namespace {
 #if defined(FREEINK_WOLFSSL_RETAIN_INPUT_BUFFER)
 // Admission only, never an allocator hook or a buffer loan. One connection
@@ -69,6 +99,9 @@ bool isWantIo(const int err) {
 }  // namespace
 
 int SecureClient::connectWithMethod(const char* host, uint16_t port, void* method, const char* label) {
+#if defined(BOARD_HAS_PSRAM)
+  ensureWolfAllocators();
+#endif
 #if defined(FREEINK_WOLFSSL_DEBUG)
   // Routes wolfSSL's internal trace through wolfSSL_Arduino_Serial_Print (the
   // application provides that hook). Shows exactly where a handshake stalls.
