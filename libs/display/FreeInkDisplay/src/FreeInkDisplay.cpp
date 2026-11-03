@@ -448,7 +448,7 @@ uint8_t* FreeInkDisplay::allocFrameBufferStorage() const {
   // heap map). Panel selection (setDisplayX3) precedes begin(), and every
   // caller runs after geometry is seeded, so bufferSize is final here.
 #if FREEINK_FB_PSRAM
-  uint8_t* buf = static_cast<uint8_t*>(heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM));
+  uint8_t* buf = static_cast<uint8_t*>(heap_caps_malloc(bufferSize, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
   if (buf) return buf;
 #endif
   return static_cast<uint8_t*>(malloc(bufferSize));
@@ -755,7 +755,7 @@ void FreeInkDisplay::displayAsyncImpl(RefreshMode mode, bool turnOffScreen, bool
     return;
   }
   if (_asyncShadow == nullptr) {
-    _asyncShadow = static_cast<uint8_t*>(malloc(bufferSize));
+    _asyncShadow = allocFrameBufferStorage();
     _shadowValid = false;
   }
   if (_asyncShadow == nullptr) {  // allocation failed: blocking fallback
